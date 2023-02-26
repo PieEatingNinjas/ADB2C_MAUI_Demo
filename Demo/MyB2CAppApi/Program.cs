@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Identity.Web;
 
@@ -26,6 +27,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 //typically the above is configured via settings in AppSettings, like this:
 //builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 //    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAdB2C"));
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("paiduserpolicy", policy => policy.RequireClaim("subscriptions", "Paid"));
+});
+
+builder.Services.AddTransient<IClaimsTransformation, UserSubscriptionClaimsTransformation>();
 
 var app = builder.Build();
 
