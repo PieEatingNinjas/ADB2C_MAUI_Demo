@@ -15,6 +15,9 @@ namespace MyB2CApp
         const string redirectUri = "mymauiapp://loggedin"; //One of the RedirectUri's registered with your AppRegistration
 
         string[] scopes = new string[] { "openid", "offline_access", "https://[Your Tenant Name].onmicrosoft.com/.../[Scope Name]" }; //Name of your API scope
+       
+        IAccount account = null;
+        
         public MainPage()
         {
             InitializeComponent();
@@ -25,45 +28,60 @@ namespace MyB2CApp
             .Build();
         }
 
-        private async void OnCounterClicked(object sender, EventArgs e)
+        protected override async void OnNavigatedTo(NavigatedToEventArgs args)
         {
+            base.OnNavigatedTo(args);
+
             await InitTokenCache();
 
             var accounts = await app.GetAccountsAsync(signUpSignInFlowName);
+            account = accounts?.FirstOrDefault();
 
-            AuthenticationResult ar = null;
+            AuthenticationResult ar;
 
             try
             {
-                ar = await app.AcquireTokenSilent(scopes, accounts?.FirstOrDefault())
+                ar = await app.AcquireTokenSilent(scopes, account)
                     .ExecuteAsync();
             }
             catch (MsalUiRequiredException)
             {
                 ar = await app.AcquireTokenInteractive(scopes)
                 .ExecuteAsync();
+
+                account = ar.Account;
             }
 
             if (ar is not null)
             {
-                var claims = ar.ClaimsPrincipal.Claims.ToList();
-                var email = claims.Single(c => c.Type.Equals("emails", StringComparison.InvariantCultureIgnoreCase)).Value;
-
-                await DisplayAlert("Welcome!", $"Hi {email}", "OK");
-
                 var client = new HttpClient();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ar.AccessToken);
 
-                var resultJson = await client.GetStringAsync("https://localhost:7133/WeatherForecast");
-                await DisplayAlert("WeatherForecast", resultJson, "ok");
+                var resultJson = await client.GetStringAsync("https://localhost:7133/UserSubscriptions");
+
+                if (resultJson.Contains("paid", StringComparison.InvariantCultureIgnoreCase))
+                    CounterBtn.IsEnabled = true;
             }
+        }
+
+        private async void OnCounterClicked(object sender, EventArgs e)
+        {
+            var client = new HttpClient();
+
+            var ar = await app.AcquireTokenSilent(scopes, account).ExecuteAsync();
+
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ar.AccessToken);
+
+            var resultJson = await client.GetStringAsync("https://localhost:7133/Weatherforecast");
+
+            await DisplayAlert("WeatherForecast", resultJson, "ok");
         }
 
         private async Task InitTokenCache()
         {
             if (DeviceInfo.Current.Platform == DevicePlatform.WinUI)
             {
-                var storageProperties = new StorageCreationPropertiesBuilder("tokencache.data", 
+                var storageProperties = new StorageCreationPropertiesBuilder("tokencache.data",
                     FileSystem.Current.CacheDirectory).Build();
 
                 var msalcachehelper = await MsalCacheHelper.CreateAsync(storageProperties);

@@ -33,7 +33,8 @@
                 Text="Click me"
                 SemanticProperties.Hint="Counts the number of times you click"
                 Clicked="OnCounterClicked"
-                HorizontalOptions="Center" />
+                HorizontalOptions="Center" 
+                IsEnabled="False"/>
 
         </VerticalStackLayout>
     </ScrollView>
