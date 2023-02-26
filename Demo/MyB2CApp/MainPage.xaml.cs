@@ -1,5 +1,6 @@
 ﻿using Microsoft.Identity.Client;
 using Microsoft.Identity.Client.Extensions.Msal;
+using System.Net.Http.Headers;
 
 namespace MyB2CApp
 {
@@ -13,7 +14,7 @@ namespace MyB2CApp
         const string signUpSignInFlowName = "B2C_1_SignUp_SignIn"; //The Sign Up and Sign In you want to use
         const string redirectUri = "mymauiapp://loggedin"; //One of the RedirectUri's registered with your AppRegistration
 
-        string[] scopes = new string[] { "openid", "offline_access" };
+        string[] scopes = new string[] { "openid", "offline_access", "https://[Your Tenant Name].onmicrosoft.com/.../[Scope Name]" }; //Name of your API scope
         public MainPage()
         {
             InitializeComponent();
@@ -49,6 +50,12 @@ namespace MyB2CApp
                 var email = claims.Single(c => c.Type.Equals("emails", StringComparison.InvariantCultureIgnoreCase)).Value;
 
                 await DisplayAlert("Welcome!", $"Hi {email}", "OK");
+
+                var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ar.AccessToken);
+
+                var resultJson = await client.GetStringAsync("https://localhost:7133/WeatherForecast");
+                await DisplayAlert("WeatherForecast", resultJson, "ok");
             }
         }
 

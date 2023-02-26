@@ -1,8 +1,12 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Identity.Web.Resource;
 
 namespace MyB2CAppApi.Controllers
 {
     [ApiController]
+    [Authorize]
+    [RequiredScope("api.read")]
     [Route("[controller]")]
     public class WeatherForecastController : ControllerBase
     {
