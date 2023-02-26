@@ -1,4 +1,5 @@
 ﻿using Microsoft.Identity.Client;
+using Microsoft.Identity.Client.Extensions.Msal;
 
 namespace MyB2CApp
 {
@@ -25,15 +26,44 @@ namespace MyB2CApp
 
         private async void OnCounterClicked(object sender, EventArgs e)
         {
-            AuthenticationResult ar = await app.AcquireTokenInteractive(scopes)
-            .ExecuteAsync();
+            await InitTokenCache();
 
-            var claims = ar.ClaimsPrincipal.Claims.ToList();
+            var accounts = await app.GetAccountsAsync(signUpSignInFlowName);
 
-            var email = claims.Single(c => c.Type.Equals("emails", StringComparison.InvariantCultureIgnoreCase)).Value;
+            AuthenticationResult ar = null;
 
-            await DisplayAlert("Welcome!", $"Hi {email}", "OK");
+            try
+            {
+                ar = await app.AcquireTokenSilent(scopes, accounts?.FirstOrDefault())
+                    .ExecuteAsync();
+            }
+            catch (MsalUiRequiredException)
+            {
+                ar = await app.AcquireTokenInteractive(scopes)
+                .ExecuteAsync();
+            }
 
+            if (ar is not null)
+            {
+                var claims = ar.ClaimsPrincipal.Claims.ToList();
+                var email = claims.Single(c => c.Type.Equals("emails", StringComparison.InvariantCultureIgnoreCase)).Value;
+
+                await DisplayAlert("Welcome!", $"Hi {email}", "OK");
+            }
+        }
+
+        private async Task InitTokenCache()
+        {
+            if (DeviceInfo.Current.Platform == DevicePlatform.WinUI)
+            {
+                var storageProperties = new StorageCreationPropertiesBuilder("tokencache.data", 
+                    FileSystem.Current.CacheDirectory).Build();
+
+                var msalcachehelper = await MsalCacheHelper.CreateAsync(storageProperties);
+                msalcachehelper.RegisterCache(app.UserTokenCache);
+
+                await app.GetAccountsAsync().ConfigureAwait(false);
+            }
         }
     }
 }
