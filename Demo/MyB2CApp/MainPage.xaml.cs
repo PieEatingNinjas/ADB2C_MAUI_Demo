@@ -33,6 +33,11 @@ namespace MyB2CApp
         {
             base.OnNavigatedTo(args);
 
+            //iOS doesn't like us immediately launching the browser
+            //or confirmation pop-up here for authentication
+            //Waiting a few ms. Dirty, but works and good enough for demo purposes.
+            await Task.Delay(500);
+
             await InitTokenCache();
 
             var accounts = await app.GetAccountsAsync(signUpSignInFlowName);
