@@ -25,6 +25,7 @@ namespace MyB2CApp
             app = PublicClientApplicationBuilder.Create(clientId)
             .WithB2CAuthority($"https://{tenantName}.b2clogin.com/tfp/{tenantName}.onmicrosoft.com/{signUpSignInFlowName}/oauth2/v2.0/token")
             .WithRedirectUri(redirectUri)
+            .WithParentActivityOrWindow(() => PlatformConfig.Instance.ParentWindow)
             .Build();
         }
 
